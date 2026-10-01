@@ -1,0 +1,22 @@
+# Deploy: fly launch --copy-config --no-deploy && fly volumes create autopunch_data --size 1 && fly deploy
+app = "autopunch-CHANGE-ME"
+primary_region = "iad"
+
+[build]
+
+[env]
+  TZ_NAME = "America/New_York"
+
+[mounts]
+  source = "autopunch_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "off"   # must stay up: punches are scheduled minutes after the event
+  min_machines_running = 1
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "1gb"
