@@ -52,3 +52,17 @@ def test_auth_rejects_bad_token(srv):
     with TestClient(server.app) as c:
         assert c.post("/event", json={"event": "arrive"}, headers={"Authorization": "Bearer nope"}).status_code == 401
         assert c.get("/status", headers={"Authorization": "Bearer t"}).status_code == 200
+
+
+def test_bootstrap_session_installs_once_per_secret(srv, monkeypatch):
+    import base64
+    server, _ = srv
+    monkeypatch.setenv("PAYCOR_SESSION_B64", base64.b64encode(b'{"cookies":[]}').decode())
+    server.bootstrap_session()
+    assert server.cfg.session_file.read_bytes() == b'{"cookies":[]}'
+    server.cfg.session_file.write_bytes(b'{"refreshed":1}')  # a punch refreshed it
+    server.bootstrap_session()
+    assert server.cfg.session_file.read_bytes() == b'{"refreshed":1}'
+    monkeypatch.setenv("PAYCOR_SESSION_B64", base64.b64encode(b'{"new":1}').decode())
+    server.bootstrap_session()
+    assert server.cfg.session_file.read_bytes() == b'{"new":1}'

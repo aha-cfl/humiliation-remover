@@ -6,9 +6,12 @@ An arrive schedules a clock-in after ARRIVE_DELAY_S; a leave inside that delay c
 (drive-by). A leave schedules a clock-out after LEAVE_DELAY_S; re-arriving cancels it.
 """
 import asyncio
+import base64
+import hashlib
 import hmac
 import json
 import logging
+import os
 from contextlib import asynccontextmanager
 from datetime import datetime
 
@@ -87,8 +90,28 @@ async def watchdog() -> None:
             await notify("Still clocked in", "No clock-out recorded. Punch out manually.", "high")
 
 
+def bootstrap_session() -> None:
+    """Install the Paycor session from the PAYCOR_SESSION_B64 secret when it changes.
+
+    Lets setup.sh ship the session as a secret instead of copying files onto the volume.
+    Punches refresh the session file afterwards, so it's only rewritten on a new secret.
+    """
+    blob = os.getenv("PAYCOR_SESSION_B64", "")
+    if not blob:
+        return
+    digest = hashlib.sha256(blob.encode()).hexdigest()
+    marker = cfg.data_dir / "session_secret.sha256"
+    if marker.exists() and marker.read_text() == digest:
+        return
+    cfg.data_dir.mkdir(parents=True, exist_ok=True)
+    cfg.session_file.write_bytes(base64.b64decode(blob))
+    marker.write_text(digest)
+    log.info("installed Paycor session from secret")
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    bootstrap_session()
     task = asyncio.create_task(watchdog())
     yield
     task.cancel()

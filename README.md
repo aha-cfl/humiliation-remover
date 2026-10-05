@@ -26,7 +26,17 @@ Get employer sign-off on automated punches before using this.
 
 All windows/delays are env vars — see `.env.example`.
 
-## Setup (~30 min, once)
+## Quick start (Mac, ~15 min)
+
+```bash
+git clone -b claude/upbeat-hopper-scwouo https://github.com/aha-cfl/humiliation-remover.git
+cd humiliation-remover && ./setup.sh
+```
+It installs everything, opens a browser for your Paycor login, deploys to Fly.io,
+and prints the exact iPhone steps with your URL and token filled in.
+Re-run `./setup.sh` whenever you get a login/MFA FAILED push.
+
+## Manual setup (what setup.sh does)
 
 ### 1. Capture a Paycor session (your computer)
 ```bash
